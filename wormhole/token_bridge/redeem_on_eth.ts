@@ -4,11 +4,12 @@ import {
   createWrappedOnEth,
   getForeignAssetEth,
   hexToUint8Array,
+  redeemOnEth,
   tryNativeToHexString,
   tryNativeToUint8Array,
 } from '@certusone/wormhole-sdk';
 import { Alchemy } from 'alchemy-sdk';
-import { getNetworkVariables } from './utils.ts';
+import { getNetworkVariables } from '../utils.ts';
 
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
 import {
@@ -20,18 +21,16 @@ import {
 
 const env = await load();
 
-interface CreateWrappedOnEth {
+interface RedeemOnEth {
   networkName: string;
   keypair: string;
   signedVAA: string; /// need to be uint8array
-  token: string;
 }
 
-export async function create_wrapped_on_eth(event: any) {
+export async function redeem_on_eth(event: any) {
   // Inputs
   // replace `JSON.parse(event.body)` with `event` for local testing
-  const { networkName, keypair, signedVAA, token }: CreateWrappedOnEth =
-    event;
+  const { networkName, keypair, signedVAA }: RedeemOnEth = event;
 
   // Get network variables
   let { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
@@ -50,28 +49,11 @@ export async function create_wrapped_on_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const receipt = await createWrappedOnEth(tokenBridge, signer, buffer, {
+  const receipt = await redeemOnEth(tokenBridge, signer, buffer, {
     gasLimit: 2000000,
   });
   console.log(receipt);
-  const originAssetHex = tryNativeToHexString(token, CHAIN_ID_SOLANA);
-
-  const foreignAsset = await getForeignAssetEth(
-    tokenBridge,
-    provider,
-    CHAIN_ID_SOLANA,
-    hexToUint8Array(originAssetHex)
-  );
-
-  const address = await getForeignAssetEth(
-    tokenBridge,
-    provider,
-    'solana',
-    tryNativeToUint8Array(token, 'solana')
-  );
-  console.log(originAssetHex, foreignAsset, address);
-
   return {
-    output: { receipt, address },
+    output: { receipt },
   };
 }
