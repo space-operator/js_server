@@ -1,34 +1,20 @@
-import { ethers, utils } from 'ethers';
+import { ethers } from 'ethers';
 import {
-  CHAIN_ID_SOLANA,
-  approveEth,
+  attestFromEth,
   getEmitterAddressEth,
   parseSequenceFromLogEth,
-  transferFromEth,
-  tryNativeToUint8Array,
 } from '@certusone/wormhole-sdk';
-
 import { Alchemy } from 'alchemy-sdk';
-import {  getNetworkVariables } from '../utils.ts';
-
+import { Body, getNetworkVariables, parseRequest } from '../utils.ts';
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
 
 //https://github.com/wormhole-foundation/wormhole/blob/main/sdk/js/src/token_bridge/__tests__/eth-integration.ts#L20
 
 const env = await load();
 
-interface TransferFromEth {
-  networkName: string;
-  token: string;
-  keypair: string;
-  recipient: string;
-  amount: string;
-}
-
-export async function transfer_from_eth(event: any) {
+export async function attest_from_eth(event: any) {
   // Inputs
-  const { networkName, token, keypair, recipient, amount }: TransferFromEth =
-    event;
+  const { networkName, token, keypair }: Body = event;
 
   // Get network variables
   const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
@@ -44,23 +30,10 @@ export async function transfer_from_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const amountParsed = utils.parseUnits(amount, 18);
-  console.log(amountParsed);
-  // approve the bridge to spend tokens
-  await approveEth(tokenBridge, token, signer, amountParsed);
-  // transfer tokens
-  const receipt = await transferFromEth(
-    tokenBridge,
-    signer,
-    token,
-    amountParsed,
-    CHAIN_ID_SOLANA,
-    tryNativeToUint8Array(recipient.toString(), CHAIN_ID_SOLANA),
-    undefined,
-    {
-      gasLimit: 2000000,
-    }
-  );
+  // Attest
+  const receipt = await attestFromEth(tokenBridge, signer, token, {
+    gasLimit: 100000,
+  });
 
   // Get the sequence from the logs (needed to fetch the vaa)
   const sequence = parseSequenceFromLogEth(receipt, wormholeCore);

@@ -33,7 +33,7 @@ export async function create_wrapped_on_eth(event: any) {
   const { networkName, keypair, signedVAA, token }: CreateWrappedOnEth = event;
 
   // Get network variables
-  let { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
