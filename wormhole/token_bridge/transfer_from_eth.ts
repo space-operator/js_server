@@ -1,15 +1,30 @@
 import { ethers, utils } from 'ethers';
 import {
+  CHAIN_ID_ETH,
+  CHAIN_ID_SEPOLIA,
   CHAIN_ID_SOLANA,
   approveEth,
   getEmitterAddressEth,
+  getForeignAssetSolana,
+  hexToUint8Array,
   parseSequenceFromLogEth,
   transferFromEth,
+  tryHexToNativeString,
+  tryNativeToHexString,
   tryNativeToUint8Array,
+  token_bridge,
 } from '@certusone/wormhole-sdk';
 
+import { PublicKey, Connection } from '@solana/web3.js';
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
+
 import { Alchemy } from 'alchemy-sdk';
-import {  getNetworkVariables } from '../utils.ts';
+import { getNetworkVariables } from '../utils.ts';
 
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
 
@@ -31,7 +46,8 @@ export async function transfer_from_eth(event: any) {
     event;
 
   // Get network variables
-  const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, tokenBridge, wormholeCore, chainId } =
+    getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
@@ -44,10 +60,41 @@ export async function transfer_from_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
+  // Parse amount
   const amountParsed = utils.parseUnits(amount, 18);
-  console.log(amountParsed);
+
+  // Get Mint Address on Solana
+  const tokenAddress = tryNativeToUint8Array(token, chainId);
+
+  const seeds = [
+    new TextEncoder().encode('wrapped'),
+    (() => {
+      const buf = new DataView(new ArrayBuffer(2));
+      buf.setUint16(0, chainId as number, false); // false for big-endian
+      return new Uint8Array(buf.buffer);
+    })(),
+    typeof tokenAddress === 'string'
+      ? new TextEncoder().encode(tokenAddress)
+      : new Uint8Array(tokenAddress),
+  ];
+
+  const solanaMintKey = PublicKey.findProgramAddressSync(
+    seeds,
+    new PublicKey('DZnkkTmCiFWfYTfT41X3Rd1kDgozqzxWaHqsw6W4x2oe')
+  )[0];
+
+  console.log(solanaMintKey, 'solanaMintKey');
+
+  // Get associated token address
+  const recipient_ata = await getAssociatedTokenAddress(
+    solanaMintKey,
+    new PublicKey(recipient)
+  );
+  console.log(recipient_ata.toString(), 'recipient_ata');
+
   // approve the bridge to spend tokens
   await approveEth(tokenBridge, token, signer, amountParsed);
+
   // transfer tokens
   const receipt = await transferFromEth(
     tokenBridge,
@@ -55,7 +102,7 @@ export async function transfer_from_eth(event: any) {
     token,
     amountParsed,
     CHAIN_ID_SOLANA,
-    tryNativeToUint8Array(recipient.toString(), CHAIN_ID_SOLANA),
+    tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
     undefined,
     {
       gasLimit: 2000000,
@@ -68,6 +115,12 @@ export async function transfer_from_eth(event: any) {
   const emitterAddress = getEmitterAddressEth(tokenBridge);
 
   return {
-    output: { receipt, emitterAddress, sequence },
+    output: {
+      receipt,
+      emitterAddress,
+      sequence,
+      recipient_ata: recipient_ata.toString(),
+      mint: solanaMintKey.toString(),
+    },
   };
 }

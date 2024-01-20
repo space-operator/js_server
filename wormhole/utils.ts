@@ -1,30 +1,32 @@
 import { Network } from 'alchemy-sdk';
+import { CHAIN_ID_ETH, CHAIN_ID_SEPOLIA } from '@certusone/wormhole-sdk';
 
 export function getNetworkVariables(networkName: string) {
-  let network: Network, tokenBridge, wormholeCore, nftBridge;
+  let network: Network, tokenBridge, wormholeCore, nftBridge, chainId;
   switch (networkName) {
     case 'mainnet':
       network = Network.ETH_MAINNET;
       tokenBridge = '0x3ee18B2214AFF97000D974cf647E7C347E8fa585';
       wormholeCore = '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B';
       nftBridge = '0x6FFd7EdE62328b3Af38FCD61461Bbfc52F5651fE';
+      chainId = CHAIN_ID_ETH;
       break;
     case 'devnet':
       network = Network.ETH_SEPOLIA;
       tokenBridge = '0xDB5492265f6038831E89f495670FF909aDe94bd9';
       wormholeCore = '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78';
       nftBridge = '0x6a0B52ac198e4870e5F3797d5B403838a5bbFD99';
-
+      chainId = CHAIN_ID_SEPOLIA;
       break;
     default:
       network = Network.ETH_SEPOLIA;
       tokenBridge = '0xDB5492265f6038831E89f495670FF909aDe94bd9';
       wormholeCore = '0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78';
       nftBridge = '0x6a0B52ac198e4870e5F3797d5B403838a5bbFD99';
-
+      chainId = CHAIN_ID_SEPOLIA;
       break;
   }
-  return { network, tokenBridge, wormholeCore, nftBridge };
+  return { network, tokenBridge, wormholeCore, nftBridge, chainId };
 }
 
 interface Headers {

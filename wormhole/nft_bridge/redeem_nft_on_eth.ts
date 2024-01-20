@@ -4,9 +4,9 @@ import {
   createWrappedOnEth,
   getForeignAssetEth,
   hexToUint8Array,
-  redeemOnEth,
   tryNativeToHexString,
   tryNativeToUint8Array,
+  nft_bridge
 } from '@certusone/wormhole-sdk';
 import { Alchemy } from 'alchemy-sdk';
 import { getNetworkVariables } from '../utils.ts';
@@ -44,7 +44,7 @@ export async function redeem_nft_on_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const receipt = await redeemOnEth(nftBridge, signer, buffer, {
+  const receipt = await nft_bridge.redeemOnEth(nftBridge, signer, buffer, {
     gasLimit: 2000000,
     
   });
@@ -53,5 +53,3 @@ export async function redeem_nft_on_eth(event: any) {
     output: { receipt },
   };
 }
-
-// sls invoke local --function redeem_nft_on_eth --path ./src/redeem_nft_on_eth/mock_redeem_nft_on_eth.json

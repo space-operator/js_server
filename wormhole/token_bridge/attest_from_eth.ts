@@ -5,7 +5,7 @@ import {
   parseSequenceFromLogEth,
 } from '@certusone/wormhole-sdk';
 import { Alchemy } from 'alchemy-sdk';
-import { Body, getNetworkVariables, parseRequest } from '../utils.ts';
+import { Body, getNetworkVariables } from '../utils.ts';
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
 
 //https://github.com/wormhole-foundation/wormhole/blob/main/sdk/js/src/token_bridge/__tests__/eth-integration.ts#L20
