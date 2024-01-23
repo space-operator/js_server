@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 import {
   CHAIN_ID_SOLANA,
-  approveEth,
   getEmitterAddressEth,
   parseSequenceFromLogEth,
   tryNativeToUint8Array,
@@ -9,13 +8,14 @@ import {
 } from '@certusone/wormhole-sdk';
 import { Alchemy } from 'alchemy-sdk';
 import { getNetworkVariables } from '../utils.ts';
-import { parseUnits } from 'ethers/lib/utils';
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
 
 //https://github.com/wormhole-foundation/wormhole/blob/main/sdk/js/src/token_bridge/__tests__/eth-integration.ts#L20
 const env = await load();
 
-interface TransferFromEth {
+interface TransferNftFromEth {
   networkName: string;
   token: string;
   keypair: string;
@@ -27,11 +27,17 @@ interface TransferFromEth {
 export async function transfer_nft_from_eth(event: any) {
   // Inputs
   // replace `JSON.parse(event.body)` with `event` for local testing
-  const { networkName, token, tokenId, keypair, recipient }: TransferFromEth =
-    event;
+  const {
+    networkName,
+    token,
+    tokenId,
+    keypair,
+    recipient,
+  }: TransferNftFromEth = event;
   console.log(event);
   // Get network variables
-  const { network, nftBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, nftBridge, wormholeCore, chainId, nftBridgeSolana } =
+    getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
@@ -44,7 +50,42 @@ export async function transfer_nft_from_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  // approve the bridge to spend tokens
+  // Get Mint Address on Solana
+  const tokenAddress = tryNativeToUint8Array(token, chainId);
+
+  // const seeds = [
+  //   new TextEncoder().encode('wrapped'),
+  //   (() => {
+  //     const buf = new DataView(new ArrayBuffer(4));
+  //     buf.setUint16(0, chainId as number, false); // false for big-endian
+  //     return new Uint8Array(buf.buffer);
+  //   })(),
+  //   typeof tokenAddress === 'string'
+  //     ? new TextEncoder().encode(tokenAddress)
+  //     : new Uint8Array(tokenAddress),
+  //   new TextEncoder().encode(tokenId),
+  // ];
+
+  // const solanaMintKey = PublicKey.findProgramAddressSync(
+  //   seeds,
+  //   new PublicKey('2rHhojZ7hpu1zA91nvZmT8TqWWvMcKmmNBCr2mKTtMq4')
+  // )[0];
+
+  const solanaMintKey = await nft_bridge.getForeignAssetSolana(
+    new PublicKey(nftBridgeSolana),
+    chainId,
+    tokenAddress,
+    tokenId
+  );
+  console.log(solanaMintKey, 'solanaMintKey');
+
+  // Get associated token address
+  const recipient_ata = await getAssociatedTokenAddress(
+    new PublicKey(solanaMintKey),
+    new PublicKey(recipient)
+  );
+  console.log(recipient_ata.toString(), 'recipient_ata');
+
   // transfer tokens
   let receipt, emitterAddress, sequence;
   try {
@@ -56,7 +97,7 @@ export async function transfer_nft_from_eth(event: any) {
       token,
       tokenId,
       CHAIN_ID_SOLANA,
-      tryNativeToUint8Array(recipient.toString(), CHAIN_ID_SOLANA),
+      tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
       {
         gasLimit: 2000000,
       }
@@ -69,6 +110,12 @@ export async function transfer_nft_from_eth(event: any) {
     console.error(error);
   }
   return {
-    output: { receipt, emitterAddress, sequence },
+    output: {
+      receipt,
+      emitterAddress,
+      sequence,
+      recipient_ata: recipient_ata.toString(),
+      mint: solanaMintKey.toString(),
+    },
   };
 }

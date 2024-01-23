@@ -1,27 +1,16 @@
 import { ethers, utils } from 'ethers';
 import {
-  CHAIN_ID_ETH,
-  CHAIN_ID_SEPOLIA,
   CHAIN_ID_SOLANA,
   approveEth,
   getEmitterAddressEth,
-  getForeignAssetSolana,
-  hexToUint8Array,
   parseSequenceFromLogEth,
   transferFromEth,
-  tryHexToNativeString,
-  tryNativeToHexString,
   tryNativeToUint8Array,
   token_bridge,
 } from '@certusone/wormhole-sdk';
 
-import { PublicKey, Connection } from '@solana/web3.js';
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-} from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 import { Alchemy } from 'alchemy-sdk';
 import { getNetworkVariables } from '../utils.ts';
@@ -46,7 +35,7 @@ export async function transfer_from_eth(event: any) {
     event;
 
   // Get network variables
-  const { network, tokenBridge, wormholeCore, chainId } =
+  const { network, tokenBridge, wormholeCore, chainId, tokenBridgeSolana } =
     getNetworkVariables(networkName);
 
   // Setup Provider
@@ -80,7 +69,7 @@ export async function transfer_from_eth(event: any) {
 
   const solanaMintKey = PublicKey.findProgramAddressSync(
     seeds,
-    new PublicKey('DZnkkTmCiFWfYTfT41X3Rd1kDgozqzxWaHqsw6W4x2oe')
+    new PublicKey(tokenBridgeSolana)
   )[0];
 
   console.log(solanaMintKey, 'solanaMintKey');
