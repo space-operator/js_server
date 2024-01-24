@@ -74,41 +74,46 @@ export async function transfer_from_eth(event: any) {
 
   console.log(solanaMintKey, 'solanaMintKey');
 
-  // Get associated token address
-  const recipient_ata = await getAssociatedTokenAddress(
-    solanaMintKey,
-    new PublicKey(recipient)
-  );
-  console.log(recipient_ata.toString(), 'recipient_ata');
+  let receipt, emitterAddress, sequence, recipient_ata;
+  try {
+    // Get associated token address
+    recipient_ata = await getAssociatedTokenAddress(
+      solanaMintKey,
+      new PublicKey(recipient)
+    );
+    console.log(recipient_ata.toString(), 'recipient_ata');
 
-  // approve the bridge to spend tokens
-  await approveEth(tokenBridge, token, signer, amountParsed);
+    // approve the bridge to spend tokens
+    await approveEth(tokenBridge, token, signer, amountParsed);
 
-  // transfer tokens
-  const receipt = await transferFromEth(
-    tokenBridge,
-    signer,
-    token,
-    amountParsed,
-    CHAIN_ID_SOLANA,
-    tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
-    undefined,
-    {
-      gasLimit: 2000000,
-    }
-  );
+    // transfer tokens
+    receipt = await transferFromEth(
+      tokenBridge,
+      signer,
+      token,
+      amountParsed,
+      CHAIN_ID_SOLANA,
+      tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
+      undefined,
+      {
+        gasLimit: 2000000,
+      }
+    );
 
-  // Get the sequence from the logs (needed to fetch the vaa)
-  const sequence = parseSequenceFromLogEth(receipt, wormholeCore);
+    // Get the sequence from the logs (needed to fetch the vaa)
+    sequence = parseSequenceFromLogEth(receipt, wormholeCore);
 
-  const emitterAddress = getEmitterAddressEth(tokenBridge);
+    emitterAddress = getEmitterAddressEth(tokenBridge);
+  } catch (error) {
+    console.error(error);
+  }
 
   return {
     output: {
       receipt,
       emitterAddress,
       sequence,
-      recipient_ata: recipient_ata.toString(),
+      recipient_ata: recipient_ata?.toString() ?? '',
       mint: solanaMintKey.toString(),
     },
   };

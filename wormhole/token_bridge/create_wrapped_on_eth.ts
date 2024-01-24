@@ -33,7 +33,8 @@ export async function create_wrapped_on_eth(event: any) {
   const { networkName, keypair, signedVAA, token }: CreateWrappedOnEth = event;
 
   // Get network variables
-  const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, tokenBridge, wormholeCore } =
+    getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
@@ -49,25 +50,31 @@ export async function create_wrapped_on_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const receipt = await createWrappedOnEth(tokenBridge, signer, buffer, {
-    gasLimit: 2000000,
-  });
-  console.log(receipt);
-  const originAssetHex = tryNativeToHexString(token, CHAIN_ID_SOLANA);
+  let receipt, originAssetHex, foreignAsset, address;
+  try {
+    receipt = await createWrappedOnEth(tokenBridge, signer, buffer, {
+      gasLimit: 2000000,
+    });
+    console.log(receipt);
+    originAssetHex = tryNativeToHexString(token, CHAIN_ID_SOLANA);
 
-  const foreignAsset = await getForeignAssetEth(
-    tokenBridge,
-    provider,
-    CHAIN_ID_SOLANA,
-    hexToUint8Array(originAssetHex)
-  );
+    foreignAsset = await getForeignAssetEth(
+      tokenBridge,
+      provider,
+      CHAIN_ID_SOLANA,
+      hexToUint8Array(originAssetHex)
+    );
 
-  const address = await getForeignAssetEth(
-    tokenBridge,
-    provider,
-    'solana',
-    tryNativeToUint8Array(token, 'solana')
-  );
+    address = await getForeignAssetEth(
+      tokenBridge,
+      provider,
+      'solana',
+      tryNativeToUint8Array(token, 'solana')
+    );
+  } catch (error) {
+    console.log(error);
+  }
+
   console.log(originAssetHex, foreignAsset, address);
 
   return {

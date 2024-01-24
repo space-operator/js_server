@@ -6,7 +6,7 @@ import {
   hexToUint8Array,
   tryNativeToHexString,
   tryNativeToUint8Array,
-  nft_bridge
+  nft_bridge,
 } from '@certusone/wormhole-sdk';
 import { Alchemy } from 'alchemy-sdk';
 import { getNetworkVariables } from '../utils.ts';
@@ -44,11 +44,16 @@ export async function redeem_nft_on_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const receipt = await nft_bridge.redeemOnEth(nftBridge, signer, buffer, {
-    gasLimit: 2000000,
-    
-  });
-  console.log(receipt);
+  let receipt;
+  try {
+    receipt = await nft_bridge.redeemOnEth(nftBridge, signer, buffer, {
+      gasLimit: 2000000,
+    });
+    console.log(receipt);
+  } catch (error) {
+    console.log(error);
+  }
+  
   return {
     output: { receipt },
   };

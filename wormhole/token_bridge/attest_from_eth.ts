@@ -17,7 +17,8 @@ export async function attest_from_eth(event: any) {
   const { networkName, token, keypair }: Body = event;
 
   // Get network variables
-  const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, tokenBridge, wormholeCore } =
+    getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
@@ -31,14 +32,18 @@ export async function attest_from_eth(event: any) {
   const signer = new ethers.Wallet(keypair, provider);
 
   // Attest
-  const receipt = await attestFromEth(tokenBridge, signer, token, {
-    gasLimit: 100000,
-  });
+  let emitterAddress, sequence, receipt;
+  try {
+    receipt = await attestFromEth(tokenBridge, signer, token, {
+      gasLimit: 100000,
+    });
+    // Get the sequence from the logs (needed to fetch the vaa)
+    sequence = parseSequenceFromLogEth(receipt, wormholeCore);
 
-  // Get the sequence from the logs (needed to fetch the vaa)
-  const sequence = parseSequenceFromLogEth(receipt, wormholeCore);
-
-  const emitterAddress = getEmitterAddressEth(tokenBridge);
+    emitterAddress = getEmitterAddressEth(tokenBridge);
+  } catch (e) {
+    console.log(e);
+  }
 
   return {
     output: { receipt, emitterAddress, sequence },

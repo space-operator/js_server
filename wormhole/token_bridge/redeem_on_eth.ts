@@ -12,9 +12,7 @@ import { Alchemy } from 'alchemy-sdk';
 import { getNetworkVariables } from '../utils.ts';
 
 import { load } from 'https://deno.land/std@0.210.0/dotenv/mod.ts';
-import {
-  decode as base64Decode,
-} from 'https://deno.land/std@0.166.0/encoding/base64.ts';
+import { decode as base64Decode } from 'https://deno.land/std@0.166.0/encoding/base64.ts';
 
 //https://github.com/wormhole-foundation/wormhole/blob/main/sdk/js/src/token_bridge/__tests__/eth-integration.ts#L20
 
@@ -32,7 +30,8 @@ export async function redeem_on_eth(event: any) {
   const { networkName, keypair, signedVAA }: RedeemOnEth = event;
 
   // Get network variables
-  const { network, tokenBridge, wormholeCore } = getNetworkVariables(networkName);
+  const { network, tokenBridge, wormholeCore } =
+    getNetworkVariables(networkName);
 
   // Setup Provider
   const settings = {
@@ -48,9 +47,15 @@ export async function redeem_on_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  const receipt = await redeemOnEth(tokenBridge, signer, buffer, {
-    gasLimit: 2000000,
-  });
+  let receipt;
+  try {
+    receipt = await redeemOnEth(tokenBridge, signer, buffer, {
+      gasLimit: 2000000,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+
   console.log(receipt);
   return {
     output: { receipt },
