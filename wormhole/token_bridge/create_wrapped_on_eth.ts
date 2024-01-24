@@ -52,8 +52,11 @@ export async function create_wrapped_on_eth(event: any) {
 
   let receipt, originAssetHex, foreignAsset, address;
   try {
+    const gasPrice = await provider.getGasPrice();
+
     receipt = await createWrappedOnEth(tokenBridge, signer, buffer, {
-      gasLimit: 2000000,
+      gasLimit: 4000000,
+      gasPrice: gasPrice.mul(2),
     });
     console.log(receipt);
     originAssetHex = tryNativeToHexString(token, CHAIN_ID_SOLANA);
@@ -62,7 +65,7 @@ export async function create_wrapped_on_eth(event: any) {
       tokenBridge,
       provider,
       CHAIN_ID_SOLANA,
-      hexToUint8Array(originAssetHex)
+      hexToUint8Array(originAssetHex),
     );
 
     address = await getForeignAssetEth(

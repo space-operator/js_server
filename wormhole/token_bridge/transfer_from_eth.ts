@@ -83,8 +83,13 @@ export async function transfer_from_eth(event: any) {
     );
     console.log(recipient_ata.toString(), 'recipient_ata');
 
+    // get current gas prices
+    const gasPrice = await provider.getGasPrice();
+
     // approve the bridge to spend tokens
-    await approveEth(tokenBridge, token, signer, amountParsed);
+    await approveEth(tokenBridge, token, signer, amountParsed, {
+      gasPrice,
+    });
 
     // transfer tokens
     receipt = await transferFromEth(
@@ -96,7 +101,8 @@ export async function transfer_from_eth(event: any) {
       tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
       undefined,
       {
-        gasLimit: 2000000,
+        gasLimit: 4000000,
+        gasPrice: gasPrice.mul(2),
       }
     );
 

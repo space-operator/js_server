@@ -91,6 +91,9 @@ export async function transfer_nft_from_eth(event: any) {
   try {
     // approve = await approveEth(nftBridge, token, signer, tokenId);
     // console.log(approve);
+
+    const gasPrice = await provider.getGasPrice();
+
     receipt = await nft_bridge.transferFromEth(
       nftBridge,
       signer,
@@ -99,7 +102,8 @@ export async function transfer_nft_from_eth(event: any) {
       CHAIN_ID_SOLANA,
       tryNativeToUint8Array(recipient_ata.toString(), CHAIN_ID_SOLANA),
       {
-        gasLimit: 2000000,
+        gasLimit: 4000000,
+        gasPrice: gasPrice.mul(2),
       }
     );
     // Get the sequence from the logs (needed to fetch the vaa)

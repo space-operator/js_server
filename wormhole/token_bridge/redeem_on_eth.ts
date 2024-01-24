@@ -49,8 +49,11 @@ export async function redeem_on_eth(event: any) {
 
   let receipt;
   try {
+    const gasPrice = await provider.getGasPrice();
+
     receipt = await redeemOnEth(tokenBridge, signer, buffer, {
-      gasLimit: 2000000,
+      gasLimit: 4000000,
+      gasPrice: gasPrice.mul(2),
     });
   } catch (error) {
     console.log(error);

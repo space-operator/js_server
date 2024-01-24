@@ -34,8 +34,11 @@ export async function attest_from_eth(event: any) {
   // Attest
   let emitterAddress, sequence, receipt;
   try {
+    const gasPrice = await provider.getGasPrice();
+
     receipt = await attestFromEth(tokenBridge, signer, token, {
-      gasLimit: 100000,
+      gasLimit: 400000,
+      gasPrice: gasPrice.mul(2),
     });
     // Get the sequence from the logs (needed to fetch the vaa)
     sequence = parseSequenceFromLogEth(receipt, wormholeCore);
