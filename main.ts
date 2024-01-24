@@ -9,7 +9,7 @@ import { get_foreign_asset_eth } from './wormhole/get_foreign_asset_eth.ts';
 
 const app = new Hono();
 
-app.get('/', (c) => c.text('Welcome to dinosaur API!'));
+app.get('/', (c) => c.text('Welcome to the Space Operator Wormhole API!'));
 
 app.post('/api/create_wrapped_on_eth', async (c) => {
   const body = await c.req.json();
