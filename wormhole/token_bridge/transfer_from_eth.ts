@@ -88,7 +88,7 @@ export async function transfer_from_eth(event: any) {
 
     // approve the bridge to spend tokens
     await approveEth(tokenBridge, token, signer, amountParsed, {
-      gasPrice,
+      gasPrice: gasPrice.mul(2),
     });
 
     // transfer tokens
