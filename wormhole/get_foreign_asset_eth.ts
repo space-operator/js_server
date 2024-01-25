@@ -28,7 +28,7 @@ export async function get_foreign_asset_eth(event: any) {
 
   // Setup Provider
   const settings = {
-    apiKey: env['ALCHEMY_API_KEY'],
+    apiKey: Deno.env.get('ALCHEMY_API_KEY'),
     network,
   };
   const alchemy = new Alchemy(settings);

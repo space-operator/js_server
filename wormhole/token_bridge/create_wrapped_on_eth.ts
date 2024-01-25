@@ -38,7 +38,7 @@ export async function create_wrapped_on_eth(event: any) {
 
   // Setup Provider
   const settings = {
-    apiKey: env['ALCHEMY_API_KEY'],
+    apiKey: Deno.env.get('ALCHEMY_API_KEY'),
     network,
   };
   const alchemy = new Alchemy(settings);
@@ -65,7 +65,7 @@ export async function create_wrapped_on_eth(event: any) {
       tokenBridge,
       provider,
       CHAIN_ID_SOLANA,
-      hexToUint8Array(originAssetHex),
+      hexToUint8Array(originAssetHex)
     );
 
     address = await getForeignAssetEth(
