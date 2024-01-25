@@ -7,9 +7,10 @@ import {
   transferFromEth,
   tryNativeToUint8Array,
   token_bridge,
+  getOriginalAssetEth,
 } from '@certusone/wormhole-sdk';
 
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Connection } from '@solana/web3.js';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 import { Alchemy } from 'alchemy-sdk';
@@ -40,6 +41,7 @@ export async function transfer_from_eth(event: any) {
 
   // Setup Provider
   const settings = {
+    // apiKey: env['ALCHEMY_API_KEY'],
     apiKey: Deno.env.get('ALCHEMY_API_KEY'),
     network,
   };
@@ -52,37 +54,75 @@ export async function transfer_from_eth(event: any) {
   // Parse amount
   const amountParsed = utils.parseUnits(amount, 18);
 
-  // Get Mint Address on Solana
-  const tokenAddress = tryNativeToUint8Array(token, chainId);
+  // const endpoint =
+  //   Deno.env.get('RPC_ENDPOINT_SOLANA') ?? env['RPC_ENDPOINT_SOLANA'];
+  // const connection = new Connection(endpoint, 'confirmed');
 
-  const seeds = [
-    new TextEncoder().encode('wrapped'),
-    (() => {
-      const buf = new DataView(new ArrayBuffer(2));
-      buf.setUint16(0, chainId as number, false); // false for big-endian
-      return new Uint8Array(buf.buffer);
-    })(),
-    typeof tokenAddress === 'string'
-      ? new TextEncoder().encode(tokenAddress)
-      : new Uint8Array(tokenAddress),
-  ];
+  let assetAddress, isWrapped, assetChainId;
+  try {
+    ({
+      assetAddress,
+      isWrapped,
+      chainId: assetChainId,
+    } = await token_bridge.getOriginalAssetEth(
+      tokenBridge,
+      provider,
+      token,
+      chainId
+    ));
+  } catch (error) {
+    console.log(error);
+  }
 
-  const solanaMintKey = PublicKey.findProgramAddressSync(
-    seeds,
-    new PublicKey(tokenBridgeSolana)
-  )[0];
+  let solanaMintKey;
 
-  console.log(solanaMintKey, 'solanaMintKey');
+  if (isWrapped) {
+    // we're transferring back to a wrapped asset to Solana, get original asset address as mint
+    solanaMintKey = new PublicKey(assetAddress!);
+  } else {
+    // we're initiating a transfer from Ethereum, get wrapped asset address as mint
+    const tokenAddress = tryNativeToUint8Array(token, chainId);
+
+    // Get Mint Address on Solana
+
+    // console.log(connection, 'connection');
+
+    // const solanaMintKey =
+    //   (await token_bridge.getForeignAssetSolana(
+    //     connection,
+    //     new PublicKey(tokenBridgeSolana),
+    //     chainId,
+    //     tokenAddress,
+    //   )) ?? '';
+    // console.log(solanaMintKey, 'solanaMintKey');
+
+    // console.log(s, 's');
+
+    // return;
+    const seeds = [
+      new TextEncoder().encode('wrapped'),
+      (() => {
+        const buf = new DataView(new ArrayBuffer(2));
+        buf.setUint16(0, chainId as number, false); // false for big-endian
+        return new Uint8Array(buf.buffer);
+      })(),
+      tokenAddress,
+    ];
+
+    solanaMintKey = PublicKey.findProgramAddressSync(
+      seeds,
+      new PublicKey(tokenBridgeSolana)
+    )[0];
+  }
 
   let receipt, emitterAddress, sequence, recipient_ata;
   try {
     // Get associated token address
     recipient_ata = await getAssociatedTokenAddress(
-      solanaMintKey,
+      new PublicKey(solanaMintKey),
       new PublicKey(recipient)
     );
     console.log(recipient_ata.toString(), 'recipient_ata');
-
     // get current gas prices
     const gasPrice = await provider.getGasPrice();
 
