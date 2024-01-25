@@ -41,8 +41,8 @@ export async function transfer_from_eth(event: any) {
 
   // Setup Provider
   const settings = {
-    // apiKey: env['ALCHEMY_API_KEY'],
-    apiKey: Deno.env.get('ALCHEMY_API_KEY'),
+    apiKey: env['ALCHEMY_API_KEY'],
+    // apiKey: Deno.env.get('ALCHEMY_API_KEY'),
     network,
   };
   const alchemy = new Alchemy(settings);
@@ -51,13 +51,12 @@ export async function transfer_from_eth(event: any) {
   // Setup signer
   const signer = new ethers.Wallet(keypair, provider);
 
-  // Parse amount
-  const amountParsed = utils.parseUnits(amount, 18);
+  // setup solana connection
+  const endpoint =
+    Deno.env.get('RPC_ENDPOINT_SOLANA') ?? env['RPC_ENDPOINT_SOLANA'];
+  const connection = new Connection(endpoint, 'confirmed');
 
-  // const endpoint =
-  //   Deno.env.get('RPC_ENDPOINT_SOLANA') ?? env['RPC_ENDPOINT_SOLANA'];
-  // const connection = new Connection(endpoint, 'confirmed');
-
+  // Determine asset origin
   let assetAddress, isWrapped, assetChainId;
   try {
     ({
@@ -74,11 +73,14 @@ export async function transfer_from_eth(event: any) {
     console.log(error);
   }
 
-  let solanaMintKey;
+  // Get mint and decimals
+  let solanaMintKey, decimals;
 
   if (isWrapped) {
     // we're transferring back to a wrapped asset to Solana, get original asset address as mint
     solanaMintKey = new PublicKey(assetAddress!);
+    decimals = (await connection.getParsedAccountInfo(solanaMintKey)).value
+      ?.data.parsed.info.decimals;
   } else {
     // we're initiating a transfer from Ethereum, get wrapped asset address as mint
     const tokenAddress = tryNativeToUint8Array(token, chainId);
@@ -113,7 +115,13 @@ export async function transfer_from_eth(event: any) {
       seeds,
       new PublicKey(tokenBridgeSolana)
     )[0];
+
+    decimals = (await alchemy.core.getTokenMetadata(token)).decimals;
   }
+
+  // Parse amount
+  const amountParsed = utils.parseUnits(amount, decimals);
+  console.log(amountParsed, 'amountParsed');
 
   let receipt, emitterAddress, sequence, recipient_ata;
   try {
