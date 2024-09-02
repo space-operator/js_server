@@ -9,8 +9,10 @@
     "@certusone/wormhole-sdk": "^0.10.9",
     "alchemy-sdk": "^2.9.2",
     "ethers": "^5.6.8",
-    "@solana/web3.js":"^1.89.1",
-    "@solana/spl-token":"^0.3.11"
+    "@solana/web3.js": "^1.89.1",
+    "@solana/spl-token": "^0.3.11",
+    "@jcx/csv": "^0.1.0",
+    "@std/fs": "^0.1.0"
   },
   "devDependencies": {
     "typescript": "^3.9.7"
