@@ -106,7 +106,6 @@ export async function transfer_nft_from_eth(event: any) {
   }
   console.log(solanaMintKey, 'solanaMintKey');
 
-
   // transfer tokens
   let receipt, emitterAddress, sequence, recipient_ata;
   try {
